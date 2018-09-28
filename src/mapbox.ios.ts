@@ -486,15 +486,20 @@ export class Mapbox extends MapboxCommon implements MapboxApi {
   addPolyline(options: AddPolylineOptions, nativeMap?): Promise<any> {
     return new Promise((resolve, reject) => {
       const theMap: MGLMapView = nativeMap || _mapbox.mapView;
-      const points = options.points;
-      if (points === undefined) {
-        reject("Please set the 'points' parameter");
-        return;
+      let geoJSON = options.geoJSON;
+
+      if (geoJSON === undefined) {
+        const points = options.points;
+        if (points === undefined) {
+          reject("Please set the 'points' parameter");
+          return;
+        }
+
+        const coordinateArray = [];
+        points.forEach(point => coordinateArray.push([point.lng, point.lat]));
+        geoJSON = `{"type": "FeatureCollection", "features": [{"type": "Feature","properties": {},"geometry": {"type": "LineString", "coordinates": ${JSON.stringify(coordinateArray)}}}]}`;
       }
-
-      const coordinateArray = [];
-      points.forEach(point => coordinateArray.push([point.lng, point.lat]));
-
+      
       const polylineID = "polyline_" + (options.id || new Date().getTime());
 
       // this would otherwise crash the app
@@ -503,7 +508,6 @@ export class Mapbox extends MapboxCommon implements MapboxApi {
         return;
       }
 
-      const geoJSON = `{"type": "FeatureCollection", "features": [{"type": "Feature","properties": {},"geometry": {"type": "LineString", "coordinates": ${JSON.stringify(coordinateArray)}}}]}`;
       const geoDataStr = NSString.stringWithString(geoJSON);
       const geoData = geoDataStr.dataUsingEncoding(NSUTF8StringEncoding);
       const geoDataBase64Enc = geoData.base64EncodedStringWithOptions(0);

@@ -855,7 +855,8 @@ export class Mapbox extends MapboxCommon implements MapboxApi {
     return new Promise((resolve, reject) => {
       try {
         const theMap = nativeMap || _mapbox;
-        const points = options.points;
+        const geoJSON = options.geoJSON;
+        let points = options.points;
         if (points === undefined) {
           reject("Please set the 'points' parameter");
           return;
@@ -865,14 +866,36 @@ export class Mapbox extends MapboxCommon implements MapboxApi {
         polylineOptions.width(options.width || 5); // default 5
         polylineOptions.color(Mapbox.getAndroidColor(options.color));
         polylineOptions.alpha(options.opacity === undefined ? 1 : options.opacity);
-        for (let p in points) {
-          let point = points[p];
-          polylineOptions.add(new com.mapbox.mapboxsdk.geometry.LatLng(point.lat, point.lng));
+
+        if (geoJSON === undefined) {
+          if (points === undefined) {
+            reject("Please set the 'points' parameter");
+            return;
+          }
+          for (let p in points) {
+            let point = points[p];
+            polylineOptions.add(new com.mapbox.mapboxsdk.geometry.LatLng(point.lat, point.lng));
+          }
+          _polylines.push({
+            id: options.id || new Date().getTime(),
+            android: theMap.mapboxMap.addPolyline(polylineOptions)
+          });
+        } else {
+          let features = JSON.parse(options.geoJSON).features;
+          for (let f in features) {
+            points = features[f].geometry.coordinates;
+            for (let p in points) {
+              let point = points[p];
+              polylineOptions.add(new com.mapbox.mapboxsdk.geometry.LatLng(point[1], point[0]));
+            }
+            _polylines.push({
+              id: options.id || new Date().getTime(),
+              android: theMap.mapboxMap.addPolyline(polylineOptions)
+            });
+          }
         }
-        _polylines.push({
-          id: options.id || new Date().getTime(),
-          android: theMap.mapboxMap.addPolyline(polylineOptions)
-        });
+
+        
         resolve();
       } catch (ex) {
         console.log("Error in mapbox.addPolyline: " + ex);

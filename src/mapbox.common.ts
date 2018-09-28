@@ -72,6 +72,14 @@ export interface AddPolylineOptions {
    * Default fully opaque (1).
    */
   opacity?: number;
+  /**
+   * geoJSON formatted data as String
+   * Will have priority on points array
+   */
+  geoJSON: string;
+  /**
+   * Polyline points array
+   */
   points: LatLng[];
 }
 
